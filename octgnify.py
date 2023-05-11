@@ -1,13 +1,12 @@
-import os
-from xml.etree import ElementTree as ET
-import json
-import re
 import copy
+import os
+import re
+from xml.etree import ElementTree as ET
 
 from octgn_card import OctgnCard
 from octgn_deck import OctgnDeck
 
-GAME_DATABASE = "E:/Games/Octgn/Data/GameDatabase/A6C8D2E8-7CD8-11DD-8F94-E62B56D89593"
+OCTGN_DIRECTORY = "E:/Games/Octgn"
 INPUT_FILE = "ninjitsu.txt"
 OUTPUT_FILE = "ninjistu.o8d"
 
@@ -16,7 +15,8 @@ def get_database():
     print("Scanning database")
     set_list = []
     database = {}
-    for root, dirs, files in os.walk(GAME_DATABASE):
+    for root, dirs, files in os.walk(
+            OCTGN_DIRECTORY + "/Data/GameDatabase/A6C8D2E8-7CD8-11DD-8F94-E62B56D89593"):
         for file in files:
             if file.endswith(".xml"):
                 set_list.append(os.path.join(root, file))
@@ -96,11 +96,11 @@ def get_random(card, sets):
                     print("Random " + card.name + " found")
                     return found_card
 
-    print("Random " + card.name+ " not found")
+    print("Random " + card.name + " not found")
 
 
 sets = get_database()
 card_list = get_card_list()
 cards = create_deck(sets, card_list)
-deck = OctgnDeck()
-deck.save_deck(cards, OUTPUT_FILE)
+deck = OctgnDeck(cards)
+deck.save_deck(OUTPUT_FILE)

@@ -3,16 +3,16 @@ from xml.etree import ElementTree as ET
 
 
 class OctgnDeck:
-    def __init__(self):
-        self.cards = None
+    def __init__(self, cards):
+        self.cards = cards
 
-    def save_deck(self, cards, output_file):
+    def save_deck(self, output_file):
         print("Converting...")
         deck = self.get_deck_element()
         command_zone_section = self.get_section_element(deck, "Command Zone")
-        self.add_card_element(command_zone_section, cards[0])
+        self.add_card_element(command_zone_section, self.cards[0])
         main_section = self.get_section_element(deck, "Main")
-        for card in cards[1::]:
+        for card in self.cards[1::]:
             self.add_card_element(main_section, card)
         sideboard_section = self.get_section_element(deck, "Sideboard")
         planes_section = self.get_section_element(deck, "Planes/Schemes")
