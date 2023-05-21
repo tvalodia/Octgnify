@@ -13,20 +13,21 @@ class DeckConverter:
         self.octgn_directory = octgn_directory
         self.input_file = input_file
         self.output_file = output_file
+        self.listeners = []
+
+    def add_listener(self, listener):
+        self.listeners.append(listener)
 
     def get_database(self):
-        print("Scanning database")
+        self.message("Scanning database")
         set_list = []
         for root, dirs, files in os.walk(
                 self.octgn_directory + "/Data/GameDatabase/A6C8D2E8-7CD8-11DD-8F94-E62B56D89593"):
             for file in files:
                 if file.endswith(".xml"):
                     set_list.append(os.path.join(root, file))
-        print(len(set_list))
-
         sets = {}
         for set_file in set_list:
-            # print (set)
             root = ET.parse(set_file)
             set = {}
             set["name"] = root.getroot().attrib.get("name")
@@ -42,14 +43,10 @@ class DeckConverter:
                 set["cards"].append(card)
             sets[set["shortName"]] = set
 
-        # with open("sets.json", "w") as fp:
-        #     json.dump(sets, fp)
-
         return sets
-        # print (sets)
 
     def get_card_list(self):
-        print("Reading card list")
+        self.message("Reading input deck")
         with open(self.input_file) as f:
             lines = f.read().splitlines()
 
@@ -76,9 +73,9 @@ class DeckConverter:
                         found_card = copy.deepcopy(set_card)
                         found_card.qty = card.qty
                         return found_card
-                print("Exact " + card.name + " not found")
+                self.message("Exact " + card.name + " not found")
         else:
-            print(card.set_short_name + ' not found')
+            self.message("Set " + card.set_short_name + ' not found in Octgn database')
             return self.get_random(card, sets)
 
         #     for
@@ -90,14 +87,35 @@ class DeckConverter:
                     if set_card.name == card.name:
                         found_card = set_card
                         found_card.qty = card.qty
-                        print("Random " + card.name + " found")
+                        self.message("Random " + card.name + " chosen from Octgn database")
                         return found_card
 
-        print("Random " + card.name + " not found")
+        self.message("Unable to find card with matching name (" + card.name + ") in Octgn database")
 
     def convert(self):
+        for listener in self.listeners:
+            listener.on_start()
+
         sets = self.get_database()
         card_list = self.get_card_list()
         cards = self.create_deck(sets, card_list)
         deck = OctgnDeck(cards)
         deck.save_deck(self.output_file)
+
+        for listener in self.listeners:
+            listener.on_complete()
+
+    def message(self, message):
+        for listener in self.listeners:
+            listener.on_message(message)
+
+class DeckConverterListener:
+
+    def on_start(self):
+        pass
+
+    def on_complete(self):
+        pass
+
+    def on_message(self, message):
+        pass

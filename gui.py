@@ -1,6 +1,8 @@
+import tkinter
 import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import ttk
+from tkinter.scrolledtext import ScrolledText
 
 from deck_converter import DeckConverter
 
@@ -11,6 +13,7 @@ class GraphicalUserInterface(tk.Frame):
 
     def __init__(self, master=None):
         super().__init__(master)
+        self.message_box = None
         self.input_file = tk.StringVar()
         self.output_file = tk.StringVar()
         self.octgn_installation_path = tk.StringVar()
@@ -155,6 +158,9 @@ class GraphicalUserInterface(tk.Frame):
 
         ).grid(row=5, column=0, columnspan=3, padx=5, pady=5, sticky="NESW")
 
+        self.message_box = ScrolledText(self.main_frame, state='disabled')
+        self.message_box.grid(row=6, column=0, columnspan=3, padx=5, pady=5, sticky="NESW")
+
     def select_input_file(self):
         filetypes = (
             ('text files', '*.txt'),
@@ -184,5 +190,21 @@ class GraphicalUserInterface(tk.Frame):
             filetypes=filetypes))
 
     def convert(self):
-        deck_converter = DeckConverter(self.octgn_installation_path.get(), self.input_file.get(), self.output_file.get())
-        deck_converter.convert()
+        try:
+            deck_converter = DeckConverter(self.octgn_installation_path.get(), self.input_file.get(), self.output_file.get())
+            deck_converter.add_listener(self)
+            deck_converter.convert()
+        except FileNotFoundError as fnf:
+            self.on_message(str(fnf))
+            self.on_complete()
+
+    def on_start(self):
+        print("handle start")
+
+    def on_complete(self):
+        self.on_message("Deck conversion completed.")
+
+    def on_message(self, message):
+        self.message_box.configure(state='normal')
+        self.message_box.insert(tkinter.END, message + '\n')
+        self.message_box.configure(state='disabled')
