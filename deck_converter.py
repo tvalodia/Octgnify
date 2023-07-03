@@ -52,7 +52,7 @@ class DeckConverter:
 
         cards = []
         for line in lines:
-            x = re.match(r"^(\d+)(\s)(.+)(\s\()(\w+)\)\s(\d+)\s", line)
+            x = re.match(r"^(\d+)(\s)(.+)(\s\()(\w+)\)\s(\d+)\s*", line)
             if x:
                 card = OctgnCard(x.group(5), "", x.group(3), x.group(6), x.group(1))
                 cards.append(card)
