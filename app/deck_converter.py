@@ -9,10 +9,8 @@ from octgn_deck import OctgnDeck
 
 class DeckConverter:
 
-    def __init__(self, octgn_directory, input_file, output_file):
+    def __init__(self, octgn_directory):
         self.octgn_directory = octgn_directory
-        self.input_file = input_file
-        self.output_file = output_file
         self.listeners = []
 
     def add_listener(self, listener):
@@ -45,10 +43,9 @@ class DeckConverter:
 
         return sets
 
-    def get_card_list(self):
-        self.message("Reading input deck")
-        with open(self.input_file) as f:
-            lines = f.read().splitlines()
+    def get_card_list(self, deck):
+        self.message("Creating input deck from input data")
+        lines = deck.splitlines()
 
         cards = []
         for line in lines:
@@ -92,22 +89,24 @@ class DeckConverter:
 
         self.message("Unable to find card with matching name (" + card.name + ") in Octgn database")
 
-    def convert(self):
+    def convert(self, inputText):
         for listener in self.listeners:
             listener.on_start()
 
         sets = self.get_database()
-        card_list = self.get_card_list()
+        card_list = self.get_card_list(inputText)
         cards = self.create_deck(sets, card_list)
         deck = OctgnDeck(cards)
-        deck.save_deck(self.output_file)
 
         for listener in self.listeners:
             listener.on_complete()
 
+        return deck
+
     def message(self, message):
         for listener in self.listeners:
             listener.on_message(message)
+
 
 class DeckConverterListener:
 

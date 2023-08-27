@@ -5,6 +5,7 @@ from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
 from deck_converter import DeckConverter
+from deck_file_converter import DeckFileConverter
 
 TEXT_ENTRY_WIDTH = 50
 
@@ -191,7 +192,7 @@ class GraphicalUserInterface(tk.Frame):
 
     def convert(self):
         try:
-            deck_converter = DeckConverter(self.octgn_installation_path.get(), self.input_file.get(), self.output_file.get())
+            deck_converter = DeckFileConverter(self.octgn_installation_path.get(), self.input_file.get(), self.output_file.get())
             deck_converter.add_listener(self)
             deck_converter.convert()
         except FileNotFoundError as fnf:
