@@ -6,7 +6,7 @@ class OctgnDeck:
     def __init__(self, cards):
         self.cards = cards
 
-    def save_deck(self, output_file):
+    def get_xml(self):
         print("Converting...")
         deck = self.get_deck_element()
         command_zone_section = self.get_section_element(deck, "Command Zone")
@@ -21,11 +21,11 @@ class OctgnDeck:
         bytes = BytesIO()
         et.write(bytes, encoding='utf-8', xml_declaration=True)
         # print(bytes.getvalue())  # your XML file, encoded as UTF-8
+        return bytes.getvalue()
 
-        # Opening a file under the name `items2.xml`,
-        # with operation mode `wb` (write + binary)
+    def save_deck(self, output_file):
         with open(output_file, "wb") as f:
-            f.write(bytes.getvalue())
+            f.write(self.get_xml())
 
         print("Conversion complete.")
 

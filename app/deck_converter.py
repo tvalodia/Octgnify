@@ -1,7 +1,6 @@
-import copy
-import os
+import os.path
 import re
-from xml.etree import ElementTree as ET
+import sqlite3
 
 from octgn_card import OctgnCard
 from octgn_deck import OctgnDeck
@@ -16,33 +15,6 @@ class DeckConverter:
     def add_listener(self, listener):
         self.listeners.append(listener)
 
-    def get_database(self):
-        self.message("Scanning database")
-        set_list = []
-        for root, dirs, files in os.walk(
-                self.octgn_directory + "/Data/GameDatabase/A6C8D2E8-7CD8-11DD-8F94-E62B56D89593"):
-            for file in files:
-                if file.endswith(".xml"):
-                    set_list.append(os.path.join(root, file))
-        sets = {}
-        for set_file in set_list:
-            root = ET.parse(set_file)
-            set = {}
-            set["name"] = root.getroot().attrib.get("name")
-            set["shortName"] = root.getroot().attrib.get("shortName")
-            set["cards"] = []
-            for elem in root.findall("./cards/card"):
-                name = elem.attrib.get('name')
-                id = elem.attrib.get('id')
-                for property in elem.findall("./property"):
-                    if property.attrib.get('name') == 'Number':
-                        number = property.attrib.get('value')
-                card = OctgnCard(set["shortName"], id, name, number, 0)
-                set["cards"].append(card)
-            sets[set["shortName"]] = set
-
-        return sets
-
     def get_card_list(self, deck):
         self.message("Creating input deck from input data")
         lines = deck.splitlines()
@@ -55,47 +27,44 @@ class DeckConverter:
                 cards.append(card)
         return cards
 
-    def create_deck(self, sets, card_list):
+    def create_deck(self, card_list):
         cards = []
         for card in card_list:
-            cards.append(self.match(card, sets))
+            cards.append(self.match(card))
         return cards
 
-    def match(self, card, sets):
-        if card.set_short_name.lower() in sets:
-            set_cards = sets[card.set_short_name.lower()]["cards"]
-            if set:
-                for set_card in set_cards:
-                    if set_card.number == card.number.zfill(3):
-                        found_card = copy.deepcopy(set_card)
-                        found_card.qty = card.qty
-                        return found_card
-                self.message("Exact " + card.name + " not found")
-        else:
-            self.message("Set " + card.set_short_name + ' not found in Octgn database')
-            return self.get_random(card, sets)
+    def match(self, card):
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(BASE_DIR, "octgn.db")
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            sql = "SELECT CARD_ID, CARD_NAME, CARD_NUMBER, SET_NAME, SET_SHORT_NAME from CARDS" \
+                  " WHERE LOWER(SET_SHORT_NAME) = '{}'" \
+                  " AND CARD_NUMBER = '{}';" \
+                .format(card.set_short_name.lower(), card.number.zfill(3))
+            result = cursor.execute(sql)
+            data = result.fetchone()
 
-        #     for
+            if data:
+                card_id, card_name, card_number, set_name, set_short_name = data
+                self.message("Exact " + card.name + " found")
+                return OctgnCard(set_short_name, card_id, card_name, card_number, card.qty)
+            else:
+                result = cursor.execute(
+                    "SELECT CARD_ID, CARD_NAME, CARD_NUMBER, SET_NAME, SET_SHORT_NAME from CARDS"
+                    " WHERE LOWER(CARD_NAME) = '{}';".format(card.name.lower().replace("\'", "\'\'")))
 
-    def get_random(self, card, sets):
-        for set in sets:
-            if set:
-                for set_card in sets[set]['cards']:
-                    if set_card.name == card.name:
-                        found_card = set_card
-                        found_card.qty = card.qty
-                        self.message("Random " + card.name + " chosen from Octgn database")
-                        return found_card
-
-        self.message("Unable to find card with matching name (" + card.name + ") in Octgn database")
+                card_id, card_name, card_number, set_name, set_short_name = result.fetchone()
+                if card_id:
+                    self.message("Random " + card.name + " chosen from Octgn database")
+                    return OctgnCard(set_short_name, card_id, card_name, card_number, card.qty)
 
     def convert(self, inputText):
         for listener in self.listeners:
             listener.on_start()
 
-        sets = self.get_database()
         card_list = self.get_card_list(inputText)
-        cards = self.create_deck(sets, card_list)
+        cards = self.create_deck(card_list)
         deck = OctgnDeck(cards)
 
         for listener in self.listeners:

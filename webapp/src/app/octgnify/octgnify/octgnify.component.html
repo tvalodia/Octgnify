@@ -1,0 +1,34 @@
+<div class="container">
+  <h1>Octgnify</h1>
+  <input type="file" class="file-input"
+         (change)="onFileSelected($event)" #fileUpload>
+
+  <section>
+    <div class="file-upload">
+      <button mat-raised-button color="primary" class="upload-btn"
+              (click)="fileUpload.click()">
+        Select File
+        <mat-icon>attach_file</mat-icon>
+      </button>
+      <mat-label> {{fileName || "No file uploaded yet."}}</mat-label>
+    </div>
+  </section>
+  <section>
+    <mat-form-field style="width: 500px;">
+      <mat-label>Deck contents</mat-label>
+      <textarea matInput
+                cdkTextareaAutosize
+                cdkAutosizeMinRows="6"
+                cdkAutosizeMaxRows="50"
+                [(ngModel)]=inputDeck
+      ></textarea>
+    </mat-form-field>
+  </section>
+  <section>
+    <button mat-raised-button color="primary" (click)="convert()">
+      Download
+      <mat-icon>download</mat-icon>
+    </button>
+
+  </section>
+</div>
