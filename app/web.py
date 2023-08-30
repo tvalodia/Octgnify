@@ -2,7 +2,7 @@ import mimetypes
 mimetypes.add_type('application/javascript', '.js')
 mimetypes.add_type('text/css', '.css')
 
-from flask import Flask, request, Response
+from flask import Flask, request, Response, send_from_directory
 from deck_converter import DeckConverter
 
 ALLOWED_EXTENSIONS = {'txt'}
@@ -33,10 +33,14 @@ def convert_input_deck():
         headers={'Content-disposition': 'attachment; filename=hello.txt'})
 
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def catch_all(path):
-    return app.send_static_file("index.html")
+@app.route('/<path:path>', methods=['GET'])
+def static_proxy(path):
+    return send_from_directory('./static', path)
+
+
+@app.route('/')
+def root():
+    return send_from_directory('./static', 'index.html')
 
 
 if __name__ == '__main__':
